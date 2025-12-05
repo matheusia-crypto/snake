@@ -33,6 +33,8 @@
       border: 5px solid #fff;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
       border-radius: 10px;
+      max-width: 100%;
+      max-height: 100%;
     }
 
     .hud {
@@ -168,12 +170,18 @@
       right: 20px;
       display: none;
       z-index: 1000;
+      cursor: move;
+      touch-action: none;
     }
 
     @media (max-width: 768px) {
       .touch-controls {
         display: block;
       }
+    }
+
+    .touch-controls.dragging {
+      opacity: 0.8;
     }
 
     .dpad {
@@ -234,8 +242,9 @@
       height: 70px;
       background: rgba(0, 0, 0, 0.6);
       border-color: #4ecdc4;
-      pointer-events: none;
+      pointer-events: auto;
       font-size: 28px;
+      cursor: move;
     }
 
     .game-over {
@@ -920,7 +929,7 @@
      <div class="success-message" id="authSuccess"></div><br><button class="start-btn" id="startBtn">CRIAR CONTA E JOGAR</button> <button class="login-mode-btn" id="loginModeBtn">J�� TENHO CONTA - FAZER LOGIN</button> <button class="store-btn" id="storeBtn">🛒 LOJA DE VIDAS</button> <button class="admin-btn" id="adminBtn">👑 ADMIN</button>
     </div>
    </div>
-   <canvas id="gameCanvas" width="800" height="600"></canvas>
+   <canvas id="gameCanvas" width="360" height="640"></canvas>
    <div class="hud">
     <div class="hud-title">
      ⚔️ SEU STATUS
@@ -1021,7 +1030,7 @@
     </div>
     <div class="store-item">
      <div class="store-item-title">
-      ❤️ 1 Vida Extra
+      ��️ 1 Vida Extra
      </div>
      <div class="store-item-desc">
       Continue jogando mesmo após morrer!
@@ -1829,6 +1838,101 @@
     document.getElementById('arrowDown').addEventListener('click', () => handleArrowPress('down'));
     document.getElementById('arrowLeft').addEventListener('click', () => handleArrowPress('left'));
     document.getElementById('arrowRight').addEventListener('click', () => handleArrowPress('right'));
+
+    // Sistema de arrastar controles touch
+    const touchControls = document.querySelector('.touch-controls');
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let controlsStartX = 0;
+    let controlsStartY = 0;
+
+    // Touch events
+    touchControls.addEventListener('touchstart', (e) => {
+      if (e.target.classList.contains('arrow-center')) {
+        isDragging = true;
+        touchControls.classList.add('dragging');
+        
+        const touch = e.touches[0];
+        dragStartX = touch.clientX;
+        dragStartY = touch.clientY;
+        
+        const rect = touchControls.getBoundingClientRect();
+        controlsStartX = rect.left;
+        controlsStartY = rect.top;
+        
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    touchControls.addEventListener('touchmove', (e) => {
+      if (isDragging) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - dragStartX;
+        const deltaY = touch.clientY - dragStartY;
+        
+        const newLeft = controlsStartX + deltaX;
+        const newTop = controlsStartY + deltaY;
+        
+        // Limitar dentro da tela
+        const maxLeft = window.innerWidth - touchControls.offsetWidth;
+        const maxTop = window.innerHeight - touchControls.offsetHeight;
+        
+        touchControls.style.left = Math.max(0, Math.min(maxLeft, newLeft)) + 'px';
+        touchControls.style.top = Math.max(0, Math.min(maxTop, newTop)) + 'px';
+        touchControls.style.right = 'auto';
+        touchControls.style.bottom = 'auto';
+        
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    touchControls.addEventListener('touchend', () => {
+      if (isDragging) {
+        isDragging = false;
+        touchControls.classList.remove('dragging');
+      }
+    });
+
+    // Mouse events para desktop
+    touchControls.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('arrow-center')) {
+        isDragging = true;
+        touchControls.classList.add('dragging');
+        
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        
+        const rect = touchControls.getBoundingClientRect();
+        controlsStartX = rect.left;
+        controlsStartY = rect.top;
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const deltaX = e.clientX - dragStartX;
+        const deltaY = e.clientY - dragStartY;
+        
+        const newLeft = controlsStartX + deltaX;
+        const newTop = controlsStartY + deltaY;
+        
+        const maxLeft = window.innerWidth - touchControls.offsetWidth;
+        const maxTop = window.innerHeight - touchControls.offsetHeight;
+        
+        touchControls.style.left = Math.max(0, Math.min(maxLeft, newLeft)) + 'px';
+        touchControls.style.top = Math.max(0, Math.min(maxTop, newTop)) + 'px';
+        touchControls.style.right = 'auto';
+        touchControls.style.bottom = 'auto';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        touchControls.classList.remove('dragging');
+      }
+    });
 
     // Botão de logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -2682,5 +2786,5 @@
       }
     });
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f28dd8510f41e',t:'MTc2NDg5MTc0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a8f606372d5f41e',t:'MTc2NDg5NDAxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
