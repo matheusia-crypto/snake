@@ -1,2 +1,0 @@
-# snake
-snake expert multiplayer
